@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useTheme } from 'vuetify'
+import { Modal } from 'usemodal-vue3'
+import axios from 'axios'
+import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 
-import logo from '@images/logo.svg?raw'
 import authV1MaskDark from '@images/pages/auth-v1-mask-dark.png'
 import authV1MaskLight from '@images/pages/auth-v1-mask-light.png'
 import authV1Tree2 from '@images/pages/auth-v1-tree-2.png'
@@ -14,7 +15,10 @@ const form = ref({
   remember: false,
 })
 
+const router = useRouter()
+
 const vuetifyTheme = useTheme()
+
 const authThemeMask = computed(() => {
   return vuetifyTheme.global.name.value === 'light'
     ? authV1MaskLight
@@ -22,6 +26,47 @@ const authThemeMask = computed(() => {
 })
 
 const isPasswordVisible = ref(false)
+const isModalErrorVisible = ref(false)
+const errorMessage = ref('')
+
+const goToRoot = () => {
+  router.push('/')
+}
+
+const login = async (email: string, password: string) => {
+  try {
+    const response = await axios.post('http://localhost:4000/api/user/login', {
+      email,
+      password,
+    })
+
+    // Assuming that your server sends back JSON data
+    const json = response.data
+
+    if (response.status !== 200) {
+
+    }
+
+    if (response.status === 200) {
+      // Save the user to local storage
+      localStorage.setItem('user', JSON.stringify(json))
+      goToRoot()
+      console.log(json)
+    }
+  }
+  catch (error) {
+    // Handle any errors that occurred during the request
+    isModalErrorVisible.value = true
+    errorMessage.value = error.response.data.error
+    console.error('Error during login:', error)
+  }
+}
+
+const handleSubmit = async (e: SubmitEvent) => {
+  e.preventDefault()
+  console.log(form.value)
+  await login(form.value.email, form.value.password)
+}
 </script>
 
 <template>
@@ -40,11 +85,11 @@ const isPasswordVisible = ref(false)
         <VCardTitle class="font-weight-semibold text-2xl text-uppercase">
           Brokers
         </VCardTitle>
-      </VCardItem>  
+      </VCardItem>
 
       <VCardText class="pt-2">
         <h5 class="text-h5 font-weight-semibold mb-1">
-          Welcome to Brokers! 
+          Welcome to Brokers!
         </h5>
         <p class="mb-0">
           Please sign-in to your account and start the adventure
@@ -52,7 +97,7 @@ const isPasswordVisible = ref(false)
       </VCardText>
 
       <VCardText>
-        <VForm @submit.prevent="() => {}">
+        <VForm @submit.prevent="handleSubmit">
           <VRow>
             <!-- email -->
             <VCol cols="12">
@@ -92,7 +137,6 @@ const isPasswordVisible = ref(false)
               <VBtn
                 block
                 type="submit"
-                to="/"
               >
                 Login
               </VBtn>
@@ -132,6 +176,15 @@ const isPasswordVisible = ref(false)
         </VForm>
       </VCardText>
     </VCard>
+
+    <Modal
+      v-model:visible="isModalErrorVisible"
+      title="Error Message"
+    >
+      <div class="error-message">
+        {{ errorMessage }}
+      </div>
+    </Modal>
 
     <VImg
       class="auth-footer-start-tree d-none d-md-block"
