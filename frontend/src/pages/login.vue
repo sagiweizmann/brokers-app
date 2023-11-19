@@ -15,6 +15,10 @@ const form = ref({
   remember: false,
 })
 
+// take form from local storage if saved
+if (localStorage.getItem('form'))
+  form.value = JSON.parse(localStorage.getItem('form')!)
+
 const router = useRouter()
 
 const vuetifyTheme = useTheme()
@@ -43,10 +47,6 @@ const login = async (email: string, password: string) => {
     // Assuming that your server sends back JSON data
     const json = response.data
 
-    if (response.status !== 200) {
-
-    }
-
     if (response.status === 200) {
       // Save the user to local storage
       localStorage.setItem('user', JSON.stringify(json))
@@ -66,6 +66,15 @@ const handleSubmit = async (e: SubmitEvent) => {
   e.preventDefault()
   console.log(form.value)
   await login(form.value.email, form.value.password)
+}
+
+const remmeberPassword = () => {
+  // save the form data to local storage
+  form.value.remember = !form.value.remember
+  if (!form.value.remember)
+    localStorage.removeItem('form')
+  else
+    localStorage.setItem('form', JSON.stringify(form.value))
 }
 </script>
 
@@ -123,6 +132,7 @@ const handleSubmit = async (e: SubmitEvent) => {
                 <VCheckbox
                   v-model="form.remember"
                   label="Remember me"
+                  @click="remmeberPassword"
                 />
 
                 <a
